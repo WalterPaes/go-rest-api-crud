@@ -14,7 +14,9 @@ var (
 const appDevEnv = "development"
 
 type Configs struct {
-	ApiPort string
+	ApiPort   string
+	LogOutput string
+	LogLevel  string
 }
 
 func Load(filenames ...string) (*Configs, error) {
@@ -24,6 +26,8 @@ func Load(filenames ...string) (*Configs, error) {
 	}
 
 	return &Configs{
-		ApiPort: os.Getenv("API_PORT"),
+		ApiPort:   os.Getenv("API_PORT"),
+		LogOutput: os.Getenv("LOG_OUTPUT"),
+		LogLevel:  os.Getenv("LOG_LEVEL"),
 	}, nil
 }

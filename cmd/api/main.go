@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/WalterPaes/go-rest-api-crud/configs"
+	"github.com/WalterPaes/go-rest-api-crud/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,6 +14,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	logger := logger.NewLogger(cfg.LogLevel, cfg.LogOutput)
+	logger.Info("Start Application")
 
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
