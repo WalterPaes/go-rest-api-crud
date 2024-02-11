@@ -2,7 +2,6 @@ package configs
 
 import (
 	"errors"
-	"log"
 	"os"
 	"strconv"
 
@@ -33,7 +32,7 @@ func Load(filenames ...string) (*Configs, error) {
 
 	mongoDbTimeout, err := strconv.Atoi(os.Getenv("MONGODB_TIMEOUT_IN_SECONDS"))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &Configs{
