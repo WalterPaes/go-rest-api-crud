@@ -28,9 +28,9 @@ type userRepo struct {
 	collection *mongo.Collection
 }
 
-func NewUserRepository(collection *mongo.Collection) *userRepo {
+func NewUserRepository(client *mongo.Client, databaseName, collectionName string) *userRepo {
 	return &userRepo{
-		collection: collection,
+		collection: client.Database(databaseName).Collection(collectionName),
 	}
 }
 
@@ -44,7 +44,7 @@ func (us *userRepo) CreateUser(parentCtx context.Context, userDomain *domain.Use
 
 	res, err := us.collection.InsertOne(ctx, userEntity)
 	if err != nil {
-		logger.Error(ErrInsertData, err, zap.String("stacktrace", "create-user"))
+		logger.Error(ErrInsertData, err, stacktraceCreateUserRepository)
 		return nil, resterrors.NewInternalServerError(ErrInsertData)
 	}
 

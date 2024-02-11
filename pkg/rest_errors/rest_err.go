@@ -52,7 +52,7 @@ func NewInternalServerError(message string) *RestErr {
 	return &RestErr{
 		Message:        message,
 		HttpErr:        internalServerError,
-		HttpStatusCode: http.StatusBadRequest,
+		HttpStatusCode: http.StatusInternalServerError,
 	}
 }
 

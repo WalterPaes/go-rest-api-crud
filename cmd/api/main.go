@@ -24,7 +24,6 @@ func main() {
 	logger.Info("Start Application")
 
 	dbClient := mongodb.NewMongoDBClient(context.Background(), cfg.MongoDBTimeout, cfg.MongoDBUri)
-	collection := dbClient.Database(cfg.MongoDBDatabase).Collection(cfg.MongoDBCollection)
 
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
@@ -33,7 +32,7 @@ func main() {
 		})
 	})
 
-	userRepository := repositories.NewUserRepository(collection)
+	userRepository := repositories.NewUserRepository(dbClient, cfg.MongoDBDatabase, cfg.MongoDBCollection)
 	userService := services.NewUserService(userRepository)
 	userHandler := handlers.NewUserHandler(userService)
 
