@@ -16,7 +16,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger.NewLogger(cfg.LogLevel, cfg.LogOutput)
+	logger.Init(cfg.LogLevel, cfg.LogOutput)
 	logger.Info("Start Application")
 
 	r := gin.Default()

@@ -11,7 +11,7 @@ var (
 	log *zap.Logger
 )
 
-func NewLogger(level, output string) {
+func Init(level, output string) {
 	logConfig := zap.Config{
 		OutputPaths: []string{
 			getLogOutput(output),
