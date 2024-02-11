@@ -33,7 +33,11 @@ func NewUserService(userRepository repositories.UserRepository) *userSvc {
 func (s *userSvc) CreateUser(ctx context.Context, user *domain.User) (*domain.User, *resterrors.RestErr) {
 	logger.Info("Starting Create User", stacktraceCreateUserService)
 
-	// Encrypt Password
+	if err := user.EncryptPassword(); err != nil {
+		logger.Error("Error when trying Encrypt Password", err, stacktraceCreateUserService)
+		return nil, resterrors.NewInternalServerError("Error when try create user")
+	}
+
 	createdUser, err := s.userRepository.CreateUser(ctx, user)
 	if err != nil {
 		logger.Error("Error when trying call repository", err, stacktraceCreateUserService)
