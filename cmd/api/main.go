@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/WalterPaes/go-rest-api-crud/configs"
+	"github.com/WalterPaes/go-rest-api-crud/internal/handlers"
 	"github.com/WalterPaes/go-rest-api-crud/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
@@ -24,5 +25,10 @@ func main() {
 			"message": "pong",
 		})
 	})
+
+	userHandler := handlers.NewUserHandler(logger)
+
+	r.POST("/users", userHandler.CreateUser)
+
 	r.Run(cfg.ApiPort)
 }

@@ -1,6 +1,10 @@
 package handlers
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/WalterPaes/go-rest-api-crud/pkg/logger"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+)
 
 type UserHandler interface {
 	ListUsers(c *gin.Context)
@@ -10,8 +14,16 @@ type UserHandler interface {
 	DeleteUser(c *gin.Context)
 }
 
-type userHandler struct{}
+type userHandler struct {
+	logger *logger.Logger
+}
 
-func NewUserHandler() *userHandler {
-	return &userHandler{}
+func NewUserHandler(logger *logger.Logger) *userHandler {
+	return &userHandler{
+		logger: logger,
+	}
+}
+
+func (h *userHandler) CreateUser(c *gin.Context) {
+	h.logger.Info("Starting Create User", zap.String("stacktrace", "create-user"))
 }
