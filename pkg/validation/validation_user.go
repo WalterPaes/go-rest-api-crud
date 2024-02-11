@@ -36,18 +36,18 @@ func ValidationUserError(validationErr error) *resterrors.RestErr {
 	}
 
 	if errors.As(validationErr, &jsonValidationErr) {
-		errorCauses := []resterrors.Cause{}
+		validationErrors := []error{}
 
 		for _, e := range validationErr.(validator.ValidationErrors) {
-			cause := resterrors.Cause{
+			err := &ValidationError{
 				Message: e.Translate(transl),
-				Field:   e.Field(),
+				Key:     e.Field(),
 			}
 
-			errorCauses = append(errorCauses, cause)
+			validationErrors = append(validationErrors, err)
 		}
 
-		return resterrors.NewBadRequestValidationError("Some fields are invalid", errorCauses)
+		return resterrors.NewBadRequestValidationError("Some fields are invalid", validationErrors)
 	}
 
 	return resterrors.NewBadRequestError("Error trying to convert fields")

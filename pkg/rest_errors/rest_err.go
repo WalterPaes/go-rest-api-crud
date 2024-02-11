@@ -12,67 +12,62 @@ const (
 )
 
 type RestErr struct {
-	Message string  `json:"message"`
-	Err     string  `json:"error"`
-	Code    int     `json:"code"`
-	Causes  []Cause `json:"causes,omitempty"`
-}
-
-type Cause struct {
-	Field   string `json:"field"`
-	Message string `json:"message"`
+	Message        string  `json:"message"`
+	HttpErr        string  `json:"http_error"`
+	HttpStatusCode int     `json:"status_code"`
+	Errors         []error `json:"errors,omitempty"`
 }
 
 func (r *RestErr) Error() string {
 	return r.Message
 }
 
-func NewRestErr(message, err string, code int, causes []Cause) *RestErr {
+func NewRestErr(message, err string, code int, errors []error) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     err,
-		Code:    code,
-		Causes:  causes,
+		Message:        message,
+		HttpErr:        err,
+		HttpStatusCode: code,
+		Errors:         errors,
 	}
 }
 
 func NewBadRequestError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     badRequest,
-		Code:    http.StatusBadRequest,
+		Message:        message,
+		HttpErr:        badRequest,
+		HttpStatusCode: http.StatusBadRequest,
 	}
 }
 
-func NewBadRequestValidationError(message string, causes []Cause) *RestErr {
+func NewBadRequestValidationError(message string, errors []error) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     badRequest,
-		Code:    http.StatusBadRequest,
-		Causes:  causes,
+		Message:        message,
+		HttpErr:        badRequest,
+		HttpStatusCode: http.StatusBadRequest,
+		Errors:         errors,
 	}
 }
 
 func NewInternalServerError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     internalServerError,
-		Code:    http.StatusBadRequest,
+		Message:        message,
+		HttpErr:        internalServerError,
+		HttpStatusCode: http.StatusBadRequest,
 	}
 }
 
 func NewNotFoundError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     notFound,
-		Code:    http.StatusNotFound,
+		Message:        message,
+		HttpErr:        notFound,
+		HttpStatusCode: http.StatusNotFound,
 	}
 }
 
 func NewForbiddenError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     forbidden,
-		Code:    http.StatusForbidden,
+		Message:        message,
+		HttpErr:        forbidden,
+		HttpStatusCode: http.StatusForbidden,
 	}
 }
