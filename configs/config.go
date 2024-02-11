@@ -2,7 +2,9 @@ package configs
 
 import (
 	"errors"
+	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -14,9 +16,11 @@ var (
 const appDevEnv = "development"
 
 type Configs struct {
-	ApiPort   string
-	LogOutput string
-	LogLevel  string
+	ApiPort        string
+	LogOutput      string
+	LogLevel       string
+	MongoDBUri     string
+	MongoDBTimeout int
 }
 
 func Load(filenames ...string) (*Configs, error) {
@@ -25,9 +29,16 @@ func Load(filenames ...string) (*Configs, error) {
 		return nil, errors.New(errLoadingFile)
 	}
 
+	mongoDbTimeout, err := strconv.Atoi(os.Getenv("MONGODB_TIMEOUT_IN_SECONDS"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return &Configs{
-		ApiPort:   os.Getenv("API_PORT"),
-		LogOutput: os.Getenv("LOG_OUTPUT"),
-		LogLevel:  os.Getenv("LOG_LEVEL"),
+		ApiPort:        os.Getenv("API_PORT"),
+		LogOutput:      os.Getenv("LOG_OUTPUT"),
+		LogLevel:       os.Getenv("LOG_LEVEL"),
+		MongoDBUri:     os.Getenv("MONGODB_URI"),
+		MongoDBTimeout: mongoDbTimeout,
 	}, nil
 }

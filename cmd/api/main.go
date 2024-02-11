@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
 	"github.com/WalterPaes/go-rest-api-crud/configs"
 	"github.com/WalterPaes/go-rest-api-crud/internal/handlers"
 	"github.com/WalterPaes/go-rest-api-crud/pkg/logger"
+	"github.com/WalterPaes/go-rest-api-crud/pkg/mongodb"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,6 +20,8 @@ func main() {
 
 	logger.Init(cfg.LogLevel, cfg.LogOutput)
 	logger.Info("Start Application")
+
+	mongodb.NewMongoDBClient(context.Background(), cfg.MongoDBTimeout, cfg.MongoDBUri)
 
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
