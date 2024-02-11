@@ -7,11 +7,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type Logger struct {
+var (
 	log *zap.Logger
-}
+)
 
-func NewLogger(level, output string) *Logger {
+func NewLogger(level, output string) {
 	logConfig := zap.Config{
 		OutputPaths: []string{
 			getLogOutput(output),
@@ -28,22 +28,18 @@ func NewLogger(level, output string) *Logger {
 		},
 	}
 
-	log, _ := logConfig.Build()
-
-	return &Logger{
-		log: log,
-	}
+	log, _ = logConfig.Build()
 }
 
-func (l *Logger) Info(message string, tags ...zap.Field) {
-	l.log.Info(message, tags...)
-	l.log.Sync()
+func Info(message string, tags ...zap.Field) {
+	log.Info(message, tags...)
+	log.Sync()
 }
 
-func (l *Logger) Error(message string, err error, tags ...zap.Field) {
+func Error(message string, err error, tags ...zap.Field) {
 	tags = append(tags, zap.NamedError("error", err))
-	l.log.Info(message, tags...)
-	l.log.Sync()
+	log.Info(message, tags...)
+	log.Sync()
 }
 
 func getLogOutput(output string) string {

@@ -16,7 +16,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger := logger.NewLogger(cfg.LogLevel, cfg.LogOutput)
+	logger.NewLogger(cfg.LogLevel, cfg.LogOutput)
 	logger.Info("Start Application")
 
 	r := gin.Default()
@@ -26,7 +26,7 @@ func main() {
 		})
 	})
 
-	userHandler := handlers.NewUserHandler(logger)
+	userHandler := handlers.NewUserHandler()
 
 	r.POST("/users", userHandler.CreateUser)
 

@@ -11,31 +11,19 @@ import (
 	"go.uber.org/zap"
 )
 
-type UserHandler interface {
-	ListUsers(c *gin.Context)
-	FindUserByID(c *gin.Context)
-	CreateUser(c *gin.Context)
-	UpdateUser(c *gin.Context)
-	DeleteUser(c *gin.Context)
-}
+type userHandler struct{}
 
-type userHandler struct {
-	logger *logger.Logger
-}
-
-func NewUserHandler(logger *logger.Logger) *userHandler {
-	return &userHandler{
-		logger: logger,
-	}
+func NewUserHandler() *userHandler {
+	return &userHandler{}
 }
 
 func (h *userHandler) CreateUser(c *gin.Context) {
-	h.logger.Info("Starting Create User", zap.String("stacktrace", "create-user"))
+	logger.Info("Starting Create User", zap.String("stacktrace", "create-user"))
 
 	var userRequest dtos.UserRequest
 
 	if err := c.ShouldBindJSON(&userRequest); err != nil {
-		h.logger.Error("User Request Validation Error", err, zap.String("stacktrace", "create-user"))
+		logger.Error("User Request Validation Error", err, zap.String("stacktrace", "create-user"))
 
 		restErr := validation.ValidationUserError(err)
 		c.JSON(restErr.HttpStatusCode, restErr)
@@ -48,7 +36,7 @@ func (h *userHandler) CreateUser(c *gin.Context) {
 		Password: userRequest.Password,
 	}
 
-	h.logger.Info("User Created Successfully", zap.String("stacktrace", "create-user"))
+	logger.Info("User Created Successfully", zap.String("stacktrace", "create-user"))
 	c.JSON(http.StatusCreated, dtos.UserResponse{
 		ID:    user.ID,
 		Name:  user.Name,
