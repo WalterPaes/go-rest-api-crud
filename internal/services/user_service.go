@@ -12,10 +12,12 @@ import (
 
 var (
 	stacktraceCreateUserService = zap.String("stacktrace", "create-user-service")
+	stacktraceDeleteUserService = zap.String("stacktrace", "delete-user-service")
 )
 
 type UserService interface {
 	CreateUser(context.Context, *domain.User) (*domain.User, *resterrors.RestErr)
+	DeleteUser(context.Context, string) *resterrors.RestErr
 }
 
 type userSvc struct {
@@ -40,4 +42,17 @@ func (s *userSvc) CreateUser(ctx context.Context, user *domain.User) (*domain.Us
 
 	logger.Info("CreateUser service executed successfully", zap.String("user_id", createdUser.ID), stacktraceCreateUserService)
 	return createdUser, nil
+}
+
+func (s *userSvc) DeleteUser(ctx context.Context, userID string) *resterrors.RestErr {
+	logger.Info("Starting Delete User", stacktraceDeleteUserService)
+
+	err := s.userRepository.DeleteUser(ctx, userID)
+	if err != nil {
+		logger.Error("Error when trying call repository", err, stacktraceDeleteUserService)
+		return err
+	}
+
+	logger.Info("DeleteUser service executed successfully", zap.String("user_id", userID), stacktraceDeleteUserService)
+	return nil
 }

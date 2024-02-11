@@ -37,6 +37,7 @@ func main() {
 	userHandler := handlers.NewUserHandler(userService)
 
 	r.POST("/users", userHandler.CreateUser)
+	r.DELETE("/users/:id", userHandler.DeleteUser)
 
 	r.Run(cfg.ApiPort)
 }
