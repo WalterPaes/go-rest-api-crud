@@ -102,6 +102,67 @@ func Test_userRepo_FindUserById(t *testing.T) {
 	})
 }
 
+func Test_userRepo_FindUserByEmail(t *testing.T) {
+	mtestDB := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	mtestDB.Run("Should Find an User By Email Successfully", func(mtestDB *mtest.T) {
+		mtestDB.AddMockResponses(
+			mtest.CreateCursorResponse(
+				1,
+				fmt.Sprintf("%s.%s", dbName, collectionName),
+				mtest.FirstBatch,
+				bson.D{
+					{Key: "_id", Value: userEntity.ID},
+					{Key: "email", Value: userEntity.Email},
+					{Key: "password", Value: userEntity.Password},
+					{Key: "name", Value: userEntity.Name},
+				},
+			),
+		)
+
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+		result, err := userRepository.FindUserByEmail(ctx, user.Email)
+
+		assert.Nil(t, err)
+		assert.Equal(t, result.Name, user.Name)
+		assert.Equal(t, result.Email, user.Email)
+	})
+
+	mtestDB.Run("Should return an error when try Find an user by email", func(mtestDB *mtest.T) {
+		mtestDB.AddMockResponses(bson.D{
+			{Key: "ok", Value: 0},
+		})
+
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+		result, err := userRepository.FindUserByEmail(ctx, user.Email)
+
+		assert.Nil(t, result)
+		assert.NotNil(t, err)
+		assert.Equal(t, err.HttpStatusCode, http.StatusInternalServerError)
+		assert.Equal(t, err.Message, errFindByEmailUser)
+	})
+
+	mtestDB.Run("Should return an error when user not found", func(mtestDB *mtest.T) {
+		mtestDB.AddMockResponses(
+			mtest.CreateCursorResponse(
+				0,
+				fmt.Sprintf("%s.%s", dbName, collectionName),
+				mtest.FirstBatch,
+			),
+		)
+
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+		result, err := userRepository.FindUserByEmail(ctx, user.Email)
+
+		assert.Nil(t, result)
+		assert.NotNil(t, err)
+		assert.Equal(t, err.HttpStatusCode, http.StatusNotFound)
+	})
+}
+
 func Test_userRepo_CreateUser(t *testing.T) {
 	mtestDB := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 

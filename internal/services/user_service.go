@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"github.com/WalterPaes/go-rest-api-crud/internal/domain"
 	"github.com/WalterPaes/go-rest-api-crud/internal/repositories"
@@ -37,6 +38,10 @@ func NewUserService(userRepository repositories.UserRepository) *userSvc {
 func (s *userSvc) CreateUser(ctx context.Context, user *domain.User) (*domain.User, *resterrors.RestErr) {
 	logger.Info("Starting Create User", stacktraceCreateUserService)
 
+	if err := s.checkIfEmailIsAlreadyRegistered(ctx, user.Email, user.ID); err != nil {
+		return nil, err
+	}
+
 	createdUser, err := s.userRepository.CreateUser(ctx, user)
 	if err != nil {
 		logger.Error("Error when trying call repository", err, stacktraceCreateUserService)
@@ -63,6 +68,10 @@ func (s *userSvc) FindUserById(ctx context.Context, userID string) (*domain.User
 func (s *userSvc) UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr) {
 	logger.Info("Starting Update User", stacktraceUpdateUserService)
 
+	if err := s.checkIfEmailIsAlreadyRegistered(ctx, user.Email, userID); err != nil {
+		return nil, err
+	}
+
 	updatedUser, err := s.userRepository.UpdateUser(ctx, userID, user)
 	if err != nil {
 		logger.Error("Error when trying call repository", err, stacktraceUpdateUserService)
@@ -83,5 +92,17 @@ func (s *userSvc) DeleteUser(ctx context.Context, userID string) *resterrors.Res
 	}
 
 	logger.Info("DeleteUser service executed successfully", zap.String("user_id", userID), stacktraceDeleteUserService)
+	return nil
+}
+
+func (s *userSvc) checkIfEmailIsAlreadyRegistered(ctx context.Context, email, userID string) *resterrors.RestErr {
+	resultUser, _ := s.userRepository.FindUserByEmail(ctx, email)
+
+	if resultUser != nil && resultUser.ID != userID {
+		errMsg := errors.New("email is already registered")
+		logger.Error(errMsg.Error(), errMsg)
+		return resterrors.NewBadRequestError(errMsg.Error())
+	}
+
 	return nil
 }
