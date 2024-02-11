@@ -74,6 +74,40 @@ func Test_userRepo_CreateUser(t *testing.T) {
 	})
 }
 
+func Test_userRepo_UpdateUser(t *testing.T) {
+	mtestDB := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	mtestDB.Run("Should Update an User Successfully", func(mtestDB *mtest.T) {
+		mtestDB.AddMockResponses(bson.D{
+			{Key: "ok", Value: 1},
+			{Key: "value", Value: userEntity},
+		})
+
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+		result, err := userRepository.UpdateUser(ctx, userEntity.ID.Hex(), user)
+
+		assert.Nil(t, err)
+		assert.Equal(t, result.Name, user.Name)
+		assert.Equal(t, result.Email, user.Email)
+	})
+
+	mtestDB.Run("Should return an error when try update an user", func(mtestDB *mtest.T) {
+		mtestDB.AddMockResponses(bson.D{
+			{Key: "ok", Value: 0},
+		})
+
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+		result, err := userRepository.UpdateUser(ctx, userEntity.ID.Hex(), user)
+
+		assert.Nil(t, result)
+		assert.NotNil(t, err)
+		assert.Equal(t, err.HttpStatusCode, http.StatusInternalServerError)
+		assert.Equal(t, err.Message, errUpdateUser)
+	})
+}
+
 func Test_userRepo_DeleteUser(t *testing.T) {
 	mtestDB := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 

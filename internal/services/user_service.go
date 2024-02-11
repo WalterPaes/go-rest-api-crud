@@ -12,12 +12,14 @@ import (
 
 var (
 	stacktraceCreateUserService = zap.String("stacktrace", "create-user-service")
+	stacktraceUpdateUserService = zap.String("stacktrace", "update-user-service")
 	stacktraceDeleteUserService = zap.String("stacktrace", "delete-user-service")
 )
 
 type UserService interface {
 	CreateUser(context.Context, *domain.User) (*domain.User, *resterrors.RestErr)
-	DeleteUser(context.Context, string) *resterrors.RestErr
+	UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr)
+	DeleteUser(ctx context.Context, userID string) *resterrors.RestErr
 }
 
 type userSvc struct {
@@ -33,11 +35,6 @@ func NewUserService(userRepository repositories.UserRepository) *userSvc {
 func (s *userSvc) CreateUser(ctx context.Context, user *domain.User) (*domain.User, *resterrors.RestErr) {
 	logger.Info("Starting Create User", stacktraceCreateUserService)
 
-	if err := user.EncryptPassword(); err != nil {
-		logger.Error("Error when trying Encrypt Password", err, stacktraceCreateUserService)
-		return nil, resterrors.NewInternalServerError("Error when try create user")
-	}
-
 	createdUser, err := s.userRepository.CreateUser(ctx, user)
 	if err != nil {
 		logger.Error("Error when trying call repository", err, stacktraceCreateUserService)
@@ -46,6 +43,19 @@ func (s *userSvc) CreateUser(ctx context.Context, user *domain.User) (*domain.Us
 
 	logger.Info("CreateUser service executed successfully", zap.String("user_id", createdUser.ID), stacktraceCreateUserService)
 	return createdUser, nil
+}
+
+func (s *userSvc) UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr) {
+	logger.Info("Starting Update User", stacktraceUpdateUserService)
+
+	updatedUser, err := s.userRepository.UpdateUser(ctx, userID, user)
+	if err != nil {
+		logger.Error("Error when trying call repository", err, stacktraceUpdateUserService)
+		return nil, err
+	}
+
+	logger.Info("UpdateUser service executed successfully", zap.String("user_id", updatedUser.ID), stacktraceUpdateUserService)
+	return updatedUser, nil
 }
 
 func (s *userSvc) DeleteUser(ctx context.Context, userID string) *resterrors.RestErr {

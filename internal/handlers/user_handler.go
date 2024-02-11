@@ -16,6 +16,7 @@ import (
 
 var (
 	stacktraceCreateUserHandler = zap.String("stacktrace", "create-user-handler")
+	stacktraceUpdateUserHandler = zap.String("stacktrace", "update-user-handler")
 	stacktraceDeleteUserHandler = zap.String("stacktrace", "delete-user-handler")
 )
 
@@ -42,7 +43,14 @@ func (h *userHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	userResult, err := h.userService.CreateUser(c.Request.Context(), converter.UserRequestToUserDomain(userRequest))
+	user, convertionErr := converter.UserRequestToUserDomain(userRequest)
+	if convertionErr != nil {
+		restErr := resterrors.NewInternalServerError("Error when try create user")
+		c.JSON(restErr.HttpStatusCode, restErr)
+		return
+	}
+
+	userResult, err := h.userService.CreateUser(c.Request.Context(), user)
 	if err != nil {
 		logger.Error("Error when trying call service", err, stacktraceCreateUserHandler)
 
@@ -54,12 +62,56 @@ func (h *userHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, converter.UserDomainToUserResponse(userResult))
 }
 
+func (h *userHandler) UpdateUser(c *gin.Context) {
+	logger.Info("Starting Update User", stacktraceUpdateUserHandler)
+
+	userID := c.Param("id")
+	if _, err := primitive.ObjectIDFromHex(userID); err != nil {
+		restErr := resterrors.NewBadRequestError("Invalid userID, must be a hex value")
+
+		logger.Error(restErr.Message, restErr, stacktraceUpdateUserHandler)
+
+		c.JSON(restErr.HttpStatusCode, restErr)
+		return
+	}
+
+	var userRequest dtos.UserRequest
+	if err := c.ShouldBindJSON(&userRequest); err != nil {
+		logger.Error("User Request Validation Error", err, stacktraceCreateUserHandler)
+
+		restErr := validation.ValidationUserError(err)
+		c.JSON(restErr.HttpStatusCode, restErr)
+		return
+	}
+
+	user, convertionErr := converter.UserRequestToUserDomain(userRequest)
+	if convertionErr != nil {
+		restErr := resterrors.NewInternalServerError("Error when try update user")
+		c.JSON(restErr.HttpStatusCode, restErr)
+		return
+	}
+
+	userResult, err := h.userService.UpdateUser(c.Request.Context(), userID, user)
+	if err != nil {
+		logger.Error("Error when trying call service", err, stacktraceUpdateUserHandler)
+
+		c.JSON(err.HttpStatusCode, err)
+		return
+	}
+
+	logger.Info("User Updated Successfully", zap.String("user_id", userResult.ID), stacktraceUpdateUserHandler)
+	c.JSON(http.StatusCreated, converter.UserDomainToUserResponse(userResult))
+}
+
 func (h *userHandler) DeleteUser(c *gin.Context) {
 	logger.Info("Starting Delete User", stacktraceDeleteUserHandler)
 
 	userID := c.Param("id")
 	if _, err := primitive.ObjectIDFromHex(userID); err != nil {
 		restErr := resterrors.NewBadRequestError("Invalid userID, must be a hex value")
+
+		logger.Error(restErr.Message, restErr, stacktraceDeleteUserHandler)
+
 		c.JSON(restErr.HttpStatusCode, restErr)
 		return
 	}

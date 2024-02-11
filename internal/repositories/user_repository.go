@@ -15,17 +15,20 @@ import (
 
 const (
 	errInsertUser = "Error When Trying Insert User"
+	errUpdateUser = "Error When Trying Update User"
 	errDeleteUser = "Error When Trying Delete User"
 )
 
 var (
 	stacktraceCreateUserRepository = zap.String("stacktrace", "create-user-repository")
+	stacktraceUpdateUserRepository = zap.String("stacktrace", "update-user-repository")
 	stacktraceDeleteUserRepository = zap.String("stacktrace", "delete-user-repository")
 )
 
 type UserRepository interface {
 	CreateUser(context.Context, *domain.User) (*domain.User, *resterrors.RestErr)
-	DeleteUser(context.Context, string) *resterrors.RestErr
+	UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr)
+	DeleteUser(ctx context.Context, userID string) *resterrors.RestErr
 }
 
 type userRepo struct {
@@ -54,6 +57,30 @@ func (us *userRepo) CreateUser(parentCtx context.Context, userDomain *domain.Use
 	userEntity.ID = res.InsertedID.(primitive.ObjectID)
 
 	logger.Info("User was Created Successfully", zap.String("userId", userEntity.ID.Hex()), stacktraceCreateUserRepository)
+
+	return converter.UserEntityToUserDomain(*userEntity), nil
+}
+
+func (us *userRepo) UpdateUser(parentCtx context.Context, userID string, userDomain *domain.User) (*domain.User, *resterrors.RestErr) {
+	logger.Info("Starting Update User Repository", stacktraceUpdateUserRepository)
+
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+
+	userObjectId, _ := primitive.ObjectIDFromHex(userID)
+	userEntity := converter.UserDomainToUserEntity(userDomain)
+
+	filter := bson.D{{Key: "_id", Value: userObjectId}}
+	updateData := bson.D{{Key: "$set", Value: userEntity}}
+
+	_, err := us.collection.UpdateOne(ctx, filter, updateData)
+	if err != nil {
+		logger.Error(errUpdateUser, err, stacktraceUpdateUserRepository)
+		return nil, resterrors.NewInternalServerError(errUpdateUser)
+	}
+	userEntity.ID = userObjectId
+
+	logger.Info("User was Update Successfully", zap.String("userId", userEntity.ID.Hex()), stacktraceUpdateUserRepository)
 
 	return converter.UserEntityToUserDomain(*userEntity), nil
 }
