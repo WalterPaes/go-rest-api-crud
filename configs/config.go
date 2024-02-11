@@ -16,11 +16,13 @@ var (
 const appDevEnv = "development"
 
 type Configs struct {
-	ApiPort        string
-	LogOutput      string
-	LogLevel       string
-	MongoDBUri     string
-	MongoDBTimeout int
+	ApiPort           string
+	LogOutput         string
+	LogLevel          string
+	MongoDBUri        string
+	MongoDBDatabase   string
+	MongoDBCollection string
+	MongoDBTimeout    int
 }
 
 func Load(filenames ...string) (*Configs, error) {
@@ -35,10 +37,12 @@ func Load(filenames ...string) (*Configs, error) {
 	}
 
 	return &Configs{
-		ApiPort:        os.Getenv("API_PORT"),
-		LogOutput:      os.Getenv("LOG_OUTPUT"),
-		LogLevel:       os.Getenv("LOG_LEVEL"),
-		MongoDBUri:     os.Getenv("MONGODB_URI"),
-		MongoDBTimeout: mongoDbTimeout,
+		ApiPort:           os.Getenv("API_PORT"),
+		LogOutput:         os.Getenv("LOG_OUTPUT"),
+		LogLevel:          os.Getenv("LOG_LEVEL"),
+		MongoDBUri:        os.Getenv("MONGODB_URI"),
+		MongoDBDatabase:   os.Getenv("MONGODB_DATABASE"),
+		MongoDBCollection: os.Getenv("MONGODB_COLLECTION"),
+		MongoDBTimeout:    mongoDbTimeout,
 	}, nil
 }

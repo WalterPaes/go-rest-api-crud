@@ -7,6 +7,8 @@ import (
 
 	"github.com/WalterPaes/go-rest-api-crud/configs"
 	"github.com/WalterPaes/go-rest-api-crud/internal/handlers"
+	"github.com/WalterPaes/go-rest-api-crud/internal/repositories"
+	"github.com/WalterPaes/go-rest-api-crud/internal/services"
 	"github.com/WalterPaes/go-rest-api-crud/pkg/logger"
 	"github.com/WalterPaes/go-rest-api-crud/pkg/mongodb"
 	"github.com/gin-gonic/gin"
@@ -21,7 +23,8 @@ func main() {
 	logger.Init(cfg.LogLevel, cfg.LogOutput)
 	logger.Info("Start Application")
 
-	mongodb.NewMongoDBClient(context.Background(), cfg.MongoDBTimeout, cfg.MongoDBUri)
+	dbClient := mongodb.NewMongoDBClient(context.Background(), cfg.MongoDBTimeout, cfg.MongoDBUri)
+	collection := dbClient.Database(cfg.MongoDBDatabase).Collection(cfg.MongoDBCollection)
 
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
@@ -30,7 +33,9 @@ func main() {
 		})
 	})
 
-	userHandler := handlers.NewUserHandler()
+	userRepository := repositories.NewUserRepository(collection)
+	userService := services.NewUserService(userRepository)
+	userHandler := handlers.NewUserHandler(userService)
 
 	r.POST("/users", userHandler.CreateUser)
 

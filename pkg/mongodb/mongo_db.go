@@ -9,15 +9,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-type MongoDB struct {
-	Client *mongo.Client
-}
-
-func NewMongoDBClient(parentCtx context.Context, timeout int, uri string) *MongoDB {
-	ctx, cancel := context.WithTimeout(parentCtx, time.Duration(timeout)*time.Second)
+func NewMongoDBClient(parentCtx context.Context, timeout int, uri string) *mongo.Client {
+	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(ctx, options.Client().SetTimeout(time.Duration(timeout)*time.Second), options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
@@ -27,13 +23,5 @@ func NewMongoDBClient(parentCtx context.Context, timeout int, uri string) *Mongo
 		panic(err)
 	}
 
-	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
-			panic(err)
-		}
-	}()
-
-	return &MongoDB{
-		Client: client,
-	}
+	return client
 }
