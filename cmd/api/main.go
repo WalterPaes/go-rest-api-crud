@@ -37,6 +37,7 @@ func main() {
 	userHandler := handlers.NewUserHandler(userService)
 
 	r.POST("/users", userHandler.CreateUser)
+	r.GET("/users/:id", userHandler.FindUserById)
 	r.PUT("/users/:id", userHandler.UpdateUser)
 	r.DELETE("/users/:id", userHandler.DeleteUser)
 

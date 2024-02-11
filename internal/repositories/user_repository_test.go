@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -38,6 +39,67 @@ var (
 
 func init() {
 	logger.Init("debug", "stdout")
+}
+
+func Test_userRepo_FindUserById(t *testing.T) {
+	mtestDB := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	mtestDB.Run("Should Find an User By Id Successfully", func(mtestDB *mtest.T) {
+		mtestDB.AddMockResponses(
+			mtest.CreateCursorResponse(
+				1,
+				fmt.Sprintf("%s.%s", dbName, collectionName),
+				mtest.FirstBatch,
+				bson.D{
+					{Key: "_id", Value: userEntity.ID},
+					{Key: "email", Value: userEntity.Email},
+					{Key: "password", Value: userEntity.Password},
+					{Key: "name", Value: userEntity.Name},
+				},
+			),
+		)
+
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+		result, err := userRepository.FindUserById(ctx, userEntity.ID.Hex())
+
+		assert.Nil(t, err)
+		assert.Equal(t, result.Name, user.Name)
+		assert.Equal(t, result.Email, user.Email)
+	})
+
+	mtestDB.Run("Should return an error when try Find an user by id", func(mtestDB *mtest.T) {
+		mtestDB.AddMockResponses(bson.D{
+			{Key: "ok", Value: 0},
+		})
+
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+		result, err := userRepository.FindUserById(ctx, userEntity.ID.Hex())
+
+		assert.Nil(t, result)
+		assert.NotNil(t, err)
+		assert.Equal(t, err.HttpStatusCode, http.StatusInternalServerError)
+		assert.Equal(t, err.Message, errFindByIdUser)
+	})
+
+	mtestDB.Run("Should return an error when user not found", func(mtestDB *mtest.T) {
+		mtestDB.AddMockResponses(
+			mtest.CreateCursorResponse(
+				0,
+				fmt.Sprintf("%s.%s", dbName, collectionName),
+				mtest.FirstBatch,
+			),
+		)
+
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+		result, err := userRepository.FindUserById(ctx, userEntity.ID.Hex())
+
+		assert.Nil(t, result)
+		assert.NotNil(t, err)
+		assert.Equal(t, err.HttpStatusCode, http.StatusNotFound)
+	})
 }
 
 func Test_userRepo_CreateUser(t *testing.T) {

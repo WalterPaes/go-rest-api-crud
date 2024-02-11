@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	stacktraceCreateUserHandler = zap.String("stacktrace", "create-user-handler")
-	stacktraceUpdateUserHandler = zap.String("stacktrace", "update-user-handler")
-	stacktraceDeleteUserHandler = zap.String("stacktrace", "delete-user-handler")
+	stacktraceCreateUserHandler   = zap.String("stacktrace", "create-user-handler")
+	stacktraceFindUserByIdHandler = zap.String("stacktrace", "find-user-by-id-handler")
+	stacktraceUpdateUserHandler   = zap.String("stacktrace", "update-user-handler")
+	stacktraceDeleteUserHandler   = zap.String("stacktrace", "delete-user-handler")
 )
 
 type userHandler struct {
@@ -62,16 +63,33 @@ func (h *userHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, converter.UserDomainToUserResponse(userResult))
 }
 
+func (h *userHandler) FindUserById(c *gin.Context) {
+	logger.Info("Starting Find User By Id", stacktraceFindUserByIdHandler)
+
+	userID, err := h.getIdFromParam(c)
+	if err != nil {
+		c.JSON(err.HttpStatusCode, err)
+		return
+	}
+
+	userResult, err := h.userService.FindUserById(c.Request.Context(), userID)
+	if err != nil {
+		logger.Error("Error when trying call service", err, stacktraceFindUserByIdHandler)
+
+		c.JSON(err.HttpStatusCode, err)
+		return
+	}
+
+	logger.Info("User was found Successfully", zap.String("user_id", userResult.ID), stacktraceFindUserByIdHandler)
+	c.JSON(http.StatusOK, converter.UserDomainToUserResponse(userResult))
+}
+
 func (h *userHandler) UpdateUser(c *gin.Context) {
 	logger.Info("Starting Update User", stacktraceUpdateUserHandler)
 
-	userID := c.Param("id")
-	if _, err := primitive.ObjectIDFromHex(userID); err != nil {
-		restErr := resterrors.NewBadRequestError("Invalid userID, must be a hex value")
-
-		logger.Error(restErr.Message, restErr, stacktraceUpdateUserHandler)
-
-		c.JSON(restErr.HttpStatusCode, restErr)
+	userID, err := h.getIdFromParam(c)
+	if err != nil {
+		c.JSON(err.HttpStatusCode, err)
 		return
 	}
 
@@ -106,17 +124,13 @@ func (h *userHandler) UpdateUser(c *gin.Context) {
 func (h *userHandler) DeleteUser(c *gin.Context) {
 	logger.Info("Starting Delete User", stacktraceDeleteUserHandler)
 
-	userID := c.Param("id")
-	if _, err := primitive.ObjectIDFromHex(userID); err != nil {
-		restErr := resterrors.NewBadRequestError("Invalid userID, must be a hex value")
-
-		logger.Error(restErr.Message, restErr, stacktraceDeleteUserHandler)
-
-		c.JSON(restErr.HttpStatusCode, restErr)
+	userID, err := h.getIdFromParam(c)
+	if err != nil {
+		c.JSON(err.HttpStatusCode, err)
 		return
 	}
 
-	err := h.userService.DeleteUser(c.Request.Context(), userID)
+	err = h.userService.DeleteUser(c.Request.Context(), userID)
 	if err != nil {
 		logger.Error("Error when trying call service", err, stacktraceDeleteUserHandler)
 
@@ -126,4 +140,14 @@ func (h *userHandler) DeleteUser(c *gin.Context) {
 
 	logger.Info("User Deleted Successfully", zap.String("user_id", userID), stacktraceDeleteUserHandler)
 	c.Status(http.StatusNoContent)
+}
+
+func (*userHandler) getIdFromParam(c *gin.Context) (string, *resterrors.RestErr) {
+	userID := c.Param("id")
+	if _, err := primitive.ObjectIDFromHex(userID); err != nil {
+		restErr := resterrors.NewBadRequestError("Invalid userID, must be a hex value")
+		logger.Error(restErr.Message, restErr, stacktraceDeleteUserHandler)
+		return "", restErr
+	}
+	return userID, nil
 }

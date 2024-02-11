@@ -2,8 +2,10 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/WalterPaes/go-rest-api-crud/internal/domain"
+	"github.com/WalterPaes/go-rest-api-crud/internal/repositories/entities"
 	"github.com/WalterPaes/go-rest-api-crud/internal/repositories/entities/converter"
 	"github.com/WalterPaes/go-rest-api-crud/pkg/logger"
 	resterrors "github.com/WalterPaes/go-rest-api-crud/pkg/rest_errors"
@@ -14,18 +16,21 @@ import (
 )
 
 const (
-	errInsertUser = "Error When Trying Insert User"
-	errUpdateUser = "Error When Trying Update User"
-	errDeleteUser = "Error When Trying Delete User"
+	errFindByIdUser = "Error When Trying Find User By ID"
+	errInsertUser   = "Error When Trying Insert User"
+	errUpdateUser   = "Error When Trying Update User"
+	errDeleteUser   = "Error When Trying Delete User"
 )
 
 var (
-	stacktraceCreateUserRepository = zap.String("stacktrace", "create-user-repository")
-	stacktraceUpdateUserRepository = zap.String("stacktrace", "update-user-repository")
-	stacktraceDeleteUserRepository = zap.String("stacktrace", "delete-user-repository")
+	stacktraceFindUserByIdRepository = zap.String("stacktrace", "find-user-by-id-repository")
+	stacktraceCreateUserRepository   = zap.String("stacktrace", "create-user-repository")
+	stacktraceUpdateUserRepository   = zap.String("stacktrace", "update-user-repository")
+	stacktraceDeleteUserRepository   = zap.String("stacktrace", "delete-user-repository")
 )
 
 type UserRepository interface {
+	FindUserById(parentCtx context.Context, userID string) (*domain.User, *resterrors.RestErr)
 	CreateUser(context.Context, *domain.User) (*domain.User, *resterrors.RestErr)
 	UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr)
 	DeleteUser(ctx context.Context, userID string) *resterrors.RestErr
@@ -61,6 +66,32 @@ func (us *userRepo) CreateUser(parentCtx context.Context, userDomain *domain.Use
 	return converter.UserEntityToUserDomain(*userEntity), nil
 }
 
+func (us *userRepo) FindUserById(parentCtx context.Context, userID string) (*domain.User, *resterrors.RestErr) {
+	logger.Info("Starting Find User by Id Repository", stacktraceFindUserByIdRepository)
+
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+
+	userObjectId, _ := primitive.ObjectIDFromHex(userID)
+
+	userEntity := &entities.UserEntity{}
+
+	err := us.collection.FindOne(ctx, bson.D{{Key: "_id", Value: userObjectId}}).Decode(userEntity)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			errorMsg := fmt.Sprintf("User not found with this id: %s", userID)
+			logger.Error(errorMsg, err, stacktraceFindUserByIdRepository)
+			return nil, resterrors.NewNotFoundError(errorMsg)
+		}
+
+		logger.Error(errFindByIdUser, err, stacktraceFindUserByIdRepository)
+		return nil, resterrors.NewInternalServerError(errFindByIdUser)
+	}
+
+	logger.Info("User was Found Successfully", zap.String("userId", userID), stacktraceFindUserByIdRepository)
+	return converter.UserEntityToUserDomain(*userEntity), nil
+}
+
 func (us *userRepo) UpdateUser(parentCtx context.Context, userID string, userDomain *domain.User) (*domain.User, *resterrors.RestErr) {
 	logger.Info("Starting Update User Repository", stacktraceUpdateUserRepository)
 
@@ -68,17 +99,16 @@ func (us *userRepo) UpdateUser(parentCtx context.Context, userID string, userDom
 	defer cancel()
 
 	userObjectId, _ := primitive.ObjectIDFromHex(userID)
-	userEntity := converter.UserDomainToUserEntity(userDomain)
+	userEntity := &entities.UserEntity{}
 
 	filter := bson.D{{Key: "_id", Value: userObjectId}}
-	updateData := bson.D{{Key: "$set", Value: userEntity}}
+	updateData := bson.D{{Key: "$set", Value: converter.UserDomainToUserEntity(userDomain)}}
 
-	_, err := us.collection.UpdateOne(ctx, filter, updateData)
+	err := us.collection.FindOneAndUpdate(ctx, filter, updateData).Decode(userEntity)
 	if err != nil {
 		logger.Error(errUpdateUser, err, stacktraceUpdateUserRepository)
 		return nil, resterrors.NewInternalServerError(errUpdateUser)
 	}
-	userEntity.ID = userObjectId
 
 	logger.Info("User was Update Successfully", zap.String("userId", userEntity.ID.Hex()), stacktraceUpdateUserRepository)
 
@@ -95,7 +125,7 @@ func (us *userRepo) DeleteUser(parentCtx context.Context, userID string) *rester
 
 	_, err := us.collection.DeleteOne(ctx, bson.D{{Key: "_id", Value: userObjectId}})
 	if err != nil {
-		logger.Error(errDeleteUser, err, stacktraceCreateUserRepository)
+		logger.Error(errDeleteUser, err, stacktraceDeleteUserRepository)
 		return resterrors.NewInternalServerError(errDeleteUser)
 	}
 

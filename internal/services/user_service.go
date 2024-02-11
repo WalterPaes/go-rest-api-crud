@@ -11,13 +11,15 @@ import (
 )
 
 var (
-	stacktraceCreateUserService = zap.String("stacktrace", "create-user-service")
-	stacktraceUpdateUserService = zap.String("stacktrace", "update-user-service")
-	stacktraceDeleteUserService = zap.String("stacktrace", "delete-user-service")
+	stacktraceCreateUserService   = zap.String("stacktrace", "create-user-service")
+	stacktraceFindUserByIdService = zap.String("stacktrace", "find-user-by-id-service")
+	stacktraceUpdateUserService   = zap.String("stacktrace", "update-user-service")
+	stacktraceDeleteUserService   = zap.String("stacktrace", "delete-user-service")
 )
 
 type UserService interface {
 	CreateUser(context.Context, *domain.User) (*domain.User, *resterrors.RestErr)
+	FindUserById(ctx context.Context, userID string) (*domain.User, *resterrors.RestErr)
 	UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr)
 	DeleteUser(ctx context.Context, userID string) *resterrors.RestErr
 }
@@ -43,6 +45,19 @@ func (s *userSvc) CreateUser(ctx context.Context, user *domain.User) (*domain.Us
 
 	logger.Info("CreateUser service executed successfully", zap.String("user_id", createdUser.ID), stacktraceCreateUserService)
 	return createdUser, nil
+}
+
+func (s *userSvc) FindUserById(ctx context.Context, userID string) (*domain.User, *resterrors.RestErr) {
+	logger.Info("Starting Find User By Id", stacktraceFindUserByIdService)
+
+	user, err := s.userRepository.FindUserById(ctx, userID)
+	if err != nil {
+		logger.Error("Error when trying call repository", err, stacktraceFindUserByIdService)
+		return nil, err
+	}
+
+	logger.Info("FindById service executed successfully", zap.String("user_id", user.ID), stacktraceFindUserByIdService)
+	return user, nil
 }
 
 func (s *userSvc) UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr) {
