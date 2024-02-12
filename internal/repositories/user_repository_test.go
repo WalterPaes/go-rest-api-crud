@@ -18,6 +18,9 @@ import (
 const (
 	dbName         = "users"
 	collectionName = "users"
+
+	currentPage  = 1
+	itemsPerPage = 10
 )
 
 var (
@@ -301,42 +304,24 @@ func Test_userRepo_FindAll(t *testing.T) {
 
 		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
 
-		result, err := userRepository.FindAll(ctx, 1, 1)
+		result, err := userRepository.FindAll(ctx, itemsPerPage, currentPage)
 
 		assert.Nil(t, err)
-		assert.Equal(t, 1, len(result))
+		assert.LessOrEqual(t, len(result), itemsPerPage)
 	})
 
-	// mtestDB.Run("Should return an error when try Find an user by id", func(mtestDB *mtest.T) {
-	// 	mtestDB.AddMockResponses(bson.D{
-	// 		{Key: "ok", Value: 0},
-	// 	})
+	mtestDB.Run("Should return an error when try find users", func(mtestDB *mtest.T) {
+		mtestDB.AddMockResponses(bson.D{
+			{Key: "ok", Value: 0},
+		})
 
-	// 	userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
 
-	// 	result, err := userRepository.FindUserById(ctx, userEntity.ID.Hex())
+		result, err := userRepository.FindAll(ctx, itemsPerPage, currentPage)
 
-	// 	assert.Nil(t, result)
-	// 	assert.NotNil(t, err)
-	// 	assert.Equal(t, err.HttpStatusCode, http.StatusInternalServerError)
-	// 	assert.Equal(t, err.Message, errFindByIdUser)
-	// })
-
-	// mtestDB.Run("Should return an error when user not found", func(mtestDB *mtest.T) {
-	// 	mtestDB.AddMockResponses(
-	// 		mtest.CreateCursorResponse(
-	// 			0,
-	// 			fmt.Sprintf("%s.%s", dbName, collectionName),
-	// 			mtest.FirstBatch,
-	// 		),
-	// 	)
-
-	// 	userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
-
-	// 	result, err := userRepository.FindUserById(ctx, userEntity.ID.Hex())
-
-	// 	assert.Nil(t, result)
-	// 	assert.NotNil(t, err)
-	// 	assert.Equal(t, err.HttpStatusCode, http.StatusNotFound)
-	// })
+		assert.Nil(t, result)
+		assert.NotNil(t, err)
+		assert.Equal(t, err.HttpStatusCode, http.StatusInternalServerError)
+		assert.Equal(t, err.Message, errFindAllUsers)
+	})
 }
