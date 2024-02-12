@@ -31,6 +31,11 @@ func Init(level, output string) {
 	log, _ = logConfig.Build()
 }
 
+func Debug(message string, tags ...zap.Field) {
+	log.Debug(message, tags...)
+	log.Sync()
+}
+
 func Info(message string, tags ...zap.Field) {
 	log.Info(message, tags...)
 	log.Sync()

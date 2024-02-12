@@ -12,7 +12,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const errCallRepositoy = "Error when try call repository"
+
 var (
+	stacktraceFindAllUsersService = zap.String("stacktrace", "find-all-users-service")
 	stacktraceCreateUserService   = zap.String("stacktrace", "create-user-service")
 	stacktraceFindUserByIdService = zap.String("stacktrace", "find-user-by-id-service")
 	stacktraceUpdateUserService   = zap.String("stacktrace", "update-user-service")
@@ -20,6 +23,7 @@ var (
 )
 
 type UserService interface {
+	FindAll(ctx context.Context, itemsPerPage, currentPage int) ([]*domain.User, *resterrors.RestErr)
 	CreateUser(context.Context, *domain.User) (*domain.User, *resterrors.RestErr)
 	FindUserById(ctx context.Context, userID string) (*domain.User, *resterrors.RestErr)
 	UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr)
@@ -36,8 +40,26 @@ func NewUserService(userRepository repositories.UserRepository) *userSvc {
 	}
 }
 
+func (s *userSvc) FindAll(ctx context.Context, itemsPerPage, currentPage int) ([]*domain.User, *resterrors.RestErr) {
+	logger.Info("Starting FindAll", stacktraceFindAllUsersService)
+
+	users, err := s.userRepository.FindAll(ctx, itemsPerPage, currentPage)
+	if err != nil {
+		logger.Error(errCallRepositoy, err, stacktraceFindAllUsersService)
+		return nil, err
+	}
+
+	logger.Info(
+		"FindAll executed successfully",
+		zap.Int("items_per_page", itemsPerPage),
+		zap.Int("current_page", currentPage),
+		stacktraceFindAllUsersService,
+	)
+	return users, nil
+}
+
 func (s *userSvc) CreateUser(ctx context.Context, user *domain.User) (*domain.User, *resterrors.RestErr) {
-	logger.Info("Starting Create User", stacktraceCreateUserService)
+	logger.Info("Starting CreateUser", stacktraceCreateUserService)
 
 	if err := s.checkIfEmailIsAlreadyRegistered(ctx, user.Email, user.ID); err != nil {
 		return nil, err
@@ -45,29 +67,29 @@ func (s *userSvc) CreateUser(ctx context.Context, user *domain.User) (*domain.Us
 
 	createdUser, err := s.userRepository.CreateUser(ctx, user)
 	if err != nil {
-		logger.Error("Error when trying call repository", err, stacktraceCreateUserService)
+		logger.Error(errCallRepositoy, err, stacktraceCreateUserService)
 		return nil, err
 	}
 
-	logger.Info("CreateUser service executed successfully", zap.String("user_id", createdUser.ID), stacktraceCreateUserService)
+	logger.Info("CreateUser executed successfully", zap.String("user_id", createdUser.ID), stacktraceCreateUserService)
 	return createdUser, nil
 }
 
 func (s *userSvc) FindUserById(ctx context.Context, userID string) (*domain.User, *resterrors.RestErr) {
-	logger.Info("Starting Find User By Id", stacktraceFindUserByIdService)
+	logger.Info("Starting FindUserById", stacktraceFindUserByIdService)
 
 	user, err := s.userRepository.FindUserById(ctx, userID)
 	if err != nil {
-		logger.Error("Error when trying call repository", err, stacktraceFindUserByIdService)
+		logger.Error(errCallRepositoy, err, stacktraceFindUserByIdService)
 		return nil, err
 	}
 
-	logger.Info("FindById service executed successfully", zap.String("user_id", user.ID), stacktraceFindUserByIdService)
+	logger.Info("FindUserById executed successfully", zap.String("user_id", user.ID), stacktraceFindUserByIdService)
 	return user, nil
 }
 
 func (s *userSvc) UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr) {
-	logger.Info("Starting Update User", stacktraceUpdateUserService)
+	logger.Info("Starting UpdateUser", stacktraceUpdateUserService)
 
 	if err := s.checkIfEmailIsAlreadyRegistered(ctx, user.Email, userID); err != nil {
 		return nil, err
@@ -75,24 +97,24 @@ func (s *userSvc) UpdateUser(ctx context.Context, userID string, user *domain.Us
 
 	updatedUser, err := s.userRepository.UpdateUser(ctx, userID, user)
 	if err != nil {
-		logger.Error("Error when trying call repository", err, stacktraceUpdateUserService)
+		logger.Error(errCallRepositoy, err, stacktraceUpdateUserService)
 		return nil, err
 	}
 
-	logger.Info("UpdateUser service executed successfully", zap.String("user_id", updatedUser.ID), stacktraceUpdateUserService)
+	logger.Info("UpdateUser executed successfully", zap.String("user_id", updatedUser.ID), stacktraceUpdateUserService)
 	return updatedUser, nil
 }
 
 func (s *userSvc) DeleteUser(ctx context.Context, userID string) *resterrors.RestErr {
-	logger.Info("Starting Delete User", stacktraceDeleteUserService)
+	logger.Info("Starting DeleteUser", stacktraceDeleteUserService)
 
 	err := s.userRepository.DeleteUser(ctx, userID)
 	if err != nil {
-		logger.Error("Error when trying call repository", err, stacktraceDeleteUserService)
+		logger.Error(errCallRepositoy, err, stacktraceDeleteUserService)
 		return err
 	}
 
-	logger.Info("DeleteUser service executed successfully", zap.String("user_id", userID), stacktraceDeleteUserService)
+	logger.Info("DeleteUser executed successfully", zap.String("user_id", userID), stacktraceDeleteUserService)
 	return nil
 }
 

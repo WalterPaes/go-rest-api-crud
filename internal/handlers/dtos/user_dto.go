@@ -11,3 +11,9 @@ type UserResponse struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
+
+type UsersListResponse struct {
+	Users        []UserResponse `json:"users"`
+	CurrentPage  int            `json:"current_page"`
+	TotalPerPage int            `json:"total_per_page"`
+}

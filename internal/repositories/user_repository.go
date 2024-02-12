@@ -12,18 +12,21 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 )
 
 const (
-	errFindByIdUser    = "Error When Trying Find User By ID"
-	errFindByEmailUser = "Error When Trying Find User By Email"
-	errInsertUser      = "Error When Trying Insert User"
-	errUpdateUser      = "Error When Trying Update User"
-	errDeleteUser      = "Error When Trying Delete User"
+	errFindAllUsers    = "Error When Try Find All Users"
+	errFindByIdUser    = "Error When Try Find User By ID"
+	errFindByEmailUser = "Error When Try Find User By Email"
+	errInsertUser      = "Error When Try Insert User"
+	errUpdateUser      = "Error When Try Update User"
+	errDeleteUser      = "Error When Try Delete User"
 )
 
 var (
+	stacktraceFindAllUserRepository     = zap.String("stacktrace", "find-all-user-repository")
 	stacktraceFindUserByIdRepository    = zap.String("stacktrace", "find-user-by-id-repository")
 	stacktraceFindUserByEmailRepository = zap.String("stacktrace", "find-user-by-email-repository")
 	stacktraceCreateUserRepository      = zap.String("stacktrace", "create-user-repository")
@@ -37,6 +40,7 @@ type UserRepository interface {
 	CreateUser(context.Context, *domain.User) (*domain.User, *resterrors.RestErr)
 	UpdateUser(ctx context.Context, userID string, user *domain.User) (*domain.User, *resterrors.RestErr)
 	DeleteUser(ctx context.Context, userID string) *resterrors.RestErr
+	FindAll(parentCtx context.Context, itemsPerPage, currentPage int) ([]*domain.User, *resterrors.RestErr)
 }
 
 type userRepo struct {
@@ -49,8 +53,42 @@ func NewUserRepository(client *mongo.Client, databaseName, collectionName string
 	}
 }
 
+func (us *userRepo) FindAll(parentCtx context.Context, itemsPerPage, currentPage int) ([]*domain.User, *resterrors.RestErr) {
+	logger.Info("Starting Find All Users", stacktraceFindAllUserRepository)
+
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+
+	limit := int64(itemsPerPage)
+	skip := int64(currentPage*itemsPerPage - itemsPerPage)
+
+	curr, err := us.collection.Find(ctx, bson.D{{}}, &options.FindOptions{Limit: &limit, Skip: &skip})
+	if err != nil {
+		logger.Error(errFindAllUsers, err, stacktraceFindAllUserRepository)
+		return nil, resterrors.NewInternalServerError(errFindAllUsers)
+	}
+
+	var usersList []*domain.User
+
+	for curr.Next(ctx) {
+		var user *entities.UserEntity
+		if err := curr.Decode(&user); err != nil {
+			logger.Error("Error when try decode user", err, stacktraceFindAllUserRepository)
+		}
+		usersList = append(usersList, converter.UserEntityToUserDomain(*user))
+	}
+
+	logger.Info(
+		"List Users Successfully",
+		zap.Int("items_per_page", itemsPerPage),
+		zap.Int("current_page", currentPage),
+		stacktraceFindUserByIdRepository,
+	)
+	return usersList, nil
+}
+
 func (us *userRepo) CreateUser(parentCtx context.Context, userDomain *domain.User) (*domain.User, *resterrors.RestErr) {
-	logger.Info("Starting Create User Repository", stacktraceCreateUserRepository)
+	logger.Info("Starting Create User", stacktraceCreateUserRepository)
 
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
@@ -64,13 +102,13 @@ func (us *userRepo) CreateUser(parentCtx context.Context, userDomain *domain.Use
 	}
 	userEntity.ID = res.InsertedID.(primitive.ObjectID)
 
-	logger.Info("User was Created Successfully", zap.String("user_id", userEntity.ID.Hex()), stacktraceCreateUserRepository)
+	logger.Info("User Created Successfully", zap.String("user_id", userEntity.ID.Hex()), stacktraceCreateUserRepository)
 
 	return converter.UserEntityToUserDomain(*userEntity), nil
 }
 
 func (us *userRepo) FindUserById(parentCtx context.Context, userID string) (*domain.User, *resterrors.RestErr) {
-	logger.Info("Starting Find User by Id Repository", stacktraceFindUserByIdRepository)
+	logger.Info("Starting Find User by Id", stacktraceFindUserByIdRepository)
 
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
@@ -82,7 +120,7 @@ func (us *userRepo) FindUserById(parentCtx context.Context, userID string) (*dom
 	err := us.collection.FindOne(ctx, bson.D{{Key: "_id", Value: userObjectId}}).Decode(userEntity)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			errorMsg := fmt.Sprintf("User not found with this id: %s", userID)
+			errorMsg := fmt.Sprintf("No users found with this id: %s", userID)
 			logger.Error(errorMsg, err, stacktraceFindUserByIdRepository)
 			return nil, resterrors.NewNotFoundError(errorMsg)
 		}
@@ -91,12 +129,12 @@ func (us *userRepo) FindUserById(parentCtx context.Context, userID string) (*dom
 		return nil, resterrors.NewInternalServerError(errFindByIdUser)
 	}
 
-	logger.Info("User was Found Successfully", zap.String("user_id", userID), stacktraceFindUserByIdRepository)
+	logger.Info("User Found Successfully", zap.String("user_id", userID), stacktraceFindUserByIdRepository)
 	return converter.UserEntityToUserDomain(*userEntity), nil
 }
 
 func (us *userRepo) FindUserByEmail(parentCtx context.Context, email string) (*domain.User, *resterrors.RestErr) {
-	logger.Info("Starting Find User by Email Repository", stacktraceFindUserByEmailRepository)
+	logger.Info("Starting Find User by Email", stacktraceFindUserByEmailRepository)
 
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
@@ -106,7 +144,7 @@ func (us *userRepo) FindUserByEmail(parentCtx context.Context, email string) (*d
 	err := us.collection.FindOne(ctx, bson.D{{Key: "email", Value: email}}).Decode(userEntity)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			errorMsg := fmt.Sprintf("User not found with this email: %s", email)
+			errorMsg := fmt.Sprintf("No users found with this email: %s", email)
 			logger.Error(errorMsg, err, stacktraceFindUserByEmailRepository)
 			return nil, resterrors.NewNotFoundError(errorMsg)
 		}
@@ -115,12 +153,12 @@ func (us *userRepo) FindUserByEmail(parentCtx context.Context, email string) (*d
 		return nil, resterrors.NewInternalServerError(errFindByEmailUser)
 	}
 
-	logger.Info("User was Found Successfully", zap.String("user_email", userEntity.Email), stacktraceFindUserByEmailRepository)
+	logger.Info("User Found Successfully", zap.String("user_email", userEntity.Email), stacktraceFindUserByEmailRepository)
 	return converter.UserEntityToUserDomain(*userEntity), nil
 }
 
 func (us *userRepo) UpdateUser(parentCtx context.Context, userID string, userDomain *domain.User) (*domain.User, *resterrors.RestErr) {
-	logger.Info("Starting Update User Repository", stacktraceUpdateUserRepository)
+	logger.Info("Starting Update User", stacktraceUpdateUserRepository)
 
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
@@ -137,13 +175,13 @@ func (us *userRepo) UpdateUser(parentCtx context.Context, userID string, userDom
 		return nil, resterrors.NewInternalServerError(errUpdateUser)
 	}
 
-	logger.Info("User was Update Successfully", zap.String("user_id", userEntity.ID.Hex()), stacktraceUpdateUserRepository)
+	logger.Info("User Updated Successfully", zap.String("user_id", userEntity.ID.Hex()), stacktraceUpdateUserRepository)
 
 	return converter.UserEntityToUserDomain(*userEntity), nil
 }
 
 func (us *userRepo) DeleteUser(parentCtx context.Context, userID string) *resterrors.RestErr {
-	logger.Info("Starting Delete User Repository", stacktraceDeleteUserRepository)
+	logger.Info("Starting Delete User", stacktraceDeleteUserRepository)
 
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
@@ -156,6 +194,6 @@ func (us *userRepo) DeleteUser(parentCtx context.Context, userID string) *rester
 		return resterrors.NewInternalServerError(errDeleteUser)
 	}
 
-	logger.Info("User was Delete Successfully", zap.String("user_id", userID), stacktraceDeleteUserRepository)
+	logger.Info("User Delete Successfully", zap.String("user_id", userID), stacktraceDeleteUserRepository)
 	return nil
 }

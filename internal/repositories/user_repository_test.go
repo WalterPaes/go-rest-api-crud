@@ -262,3 +262,81 @@ func Test_userRepo_DeleteUser(t *testing.T) {
 		assert.Equal(t, err.Message, errDeleteUser)
 	})
 }
+
+func Test_userRepo_FindAll(t *testing.T) {
+	mtestDB := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	mtestDB.Run("Should Find all Users Successfully", func(mtestDB *mtest.T) {
+		first := mtest.CreateCursorResponse(
+			1,
+			fmt.Sprintf("%s.%s", dbName, collectionName),
+			mtest.FirstBatch,
+			bson.D{
+				{Key: "_id", Value: userEntity.ID},
+				{Key: "email", Value: userEntity.Email},
+				{Key: "password", Value: userEntity.Password},
+				{Key: "name", Value: userEntity.Name},
+			},
+		)
+
+		getMore := mtest.CreateCursorResponse(
+			1,
+			fmt.Sprintf("%s.%s", dbName, collectionName),
+			mtest.NextBatch,
+			bson.D{
+				{Key: "_id", Value: userEntity.ID},
+				{Key: "email", Value: userEntity.Email},
+				{Key: "password", Value: userEntity.Password},
+				{Key: "name", Value: userEntity.Name},
+			},
+		)
+
+		killCursors := mtest.CreateCursorResponse(
+			0,
+			fmt.Sprintf("%s.%s", dbName, collectionName),
+			mtest.NextBatch,
+		)
+
+		mtestDB.AddMockResponses(first, getMore, killCursors)
+
+		userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+		result, err := userRepository.FindAll(ctx, 1, 1)
+
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(result))
+	})
+
+	// mtestDB.Run("Should return an error when try Find an user by id", func(mtestDB *mtest.T) {
+	// 	mtestDB.AddMockResponses(bson.D{
+	// 		{Key: "ok", Value: 0},
+	// 	})
+
+	// 	userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+	// 	result, err := userRepository.FindUserById(ctx, userEntity.ID.Hex())
+
+	// 	assert.Nil(t, result)
+	// 	assert.NotNil(t, err)
+	// 	assert.Equal(t, err.HttpStatusCode, http.StatusInternalServerError)
+	// 	assert.Equal(t, err.Message, errFindByIdUser)
+	// })
+
+	// mtestDB.Run("Should return an error when user not found", func(mtestDB *mtest.T) {
+	// 	mtestDB.AddMockResponses(
+	// 		mtest.CreateCursorResponse(
+	// 			0,
+	// 			fmt.Sprintf("%s.%s", dbName, collectionName),
+	// 			mtest.FirstBatch,
+	// 		),
+	// 	)
+
+	// 	userRepository := NewUserRepository(mtestDB.Client, dbName, collectionName)
+
+	// 	result, err := userRepository.FindUserById(ctx, userEntity.ID.Hex())
+
+	// 	assert.Nil(t, result)
+	// 	assert.NotNil(t, err)
+	// 	assert.Equal(t, err.HttpStatusCode, http.StatusNotFound)
+	// })
+}

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/WalterPaes/go-rest-api-crud/internal/handlers/dtos"
 	"github.com/WalterPaes/go-rest-api-crud/internal/handlers/dtos/converter"
@@ -14,7 +15,13 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	errUserRequestValidation = "User Request Validation Error"
+	errTryCallService        = "Error when try call service"
+)
+
 var (
+	stacktraceFindAllUsersHandler = zap.String("stacktrace", "find-all-users-handler")
 	stacktraceCreateUserHandler   = zap.String("stacktrace", "create-user-handler")
 	stacktraceFindUserByIdHandler = zap.String("stacktrace", "find-user-by-id-handler")
 	stacktraceUpdateUserHandler   = zap.String("stacktrace", "update-user-handler")
@@ -31,13 +38,60 @@ func NewUserHandler(userService services.UserService) *userHandler {
 	}
 }
 
+func (h *userHandler) ListAll(c *gin.Context) {
+	logger.Info("Starting Find User By Id", stacktraceFindAllUsersHandler)
+
+	var (
+		currentPage  int = 1
+		itemsPerPage int = 10
+	)
+
+	page, exists := c.GetQuery("page")
+	if exists {
+		value, err := strconv.Atoi(page)
+		if err != nil {
+			restErr := resterrors.NewBadRequestError(`Param "page" must be a int value`)
+			c.JSON(restErr.HttpStatusCode, restErr)
+			return
+		}
+		currentPage = value
+	}
+
+	perPage, exists := c.GetQuery("per_page")
+	if exists {
+		value, err := strconv.Atoi(perPage)
+		if err != nil {
+			restErr := resterrors.NewBadRequestError(`Param "per_page" must be a int value`)
+			c.JSON(restErr.HttpStatusCode, restErr)
+			return
+		}
+		itemsPerPage = value
+	}
+
+	userResult, err := h.userService.FindAll(c.Request.Context(), itemsPerPage, currentPage)
+	if err != nil {
+		logger.Error(errTryCallService, err, stacktraceFindUserByIdHandler)
+
+		c.JSON(err.HttpStatusCode, err)
+		return
+	}
+
+	logger.Info(
+		"User Found Successfully",
+		zap.Int("items_per_page", itemsPerPage),
+		zap.Int("current_page", currentPage),
+		stacktraceFindAllUsersHandler,
+	)
+	c.JSON(http.StatusOK, converter.UsersDomainListToUserListResponse(userResult, currentPage, itemsPerPage))
+}
+
 func (h *userHandler) CreateUser(c *gin.Context) {
 	logger.Info("Starting Create User", stacktraceCreateUserHandler)
 
 	var userRequest dtos.UserRequest
 
 	if err := c.ShouldBindJSON(&userRequest); err != nil {
-		logger.Error("User Request Validation Error", err, stacktraceCreateUserHandler)
+		logger.Error(errUserRequestValidation, err, stacktraceCreateUserHandler)
 
 		restErr := validation.ValidationUserError(err)
 		c.JSON(restErr.HttpStatusCode, restErr)
@@ -53,7 +107,7 @@ func (h *userHandler) CreateUser(c *gin.Context) {
 
 	userResult, err := h.userService.CreateUser(c.Request.Context(), user)
 	if err != nil {
-		logger.Error("Error when trying call service", err, stacktraceCreateUserHandler)
+		logger.Error(errTryCallService, err, stacktraceCreateUserHandler)
 
 		c.JSON(err.HttpStatusCode, err)
 		return
@@ -63,7 +117,7 @@ func (h *userHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, converter.UserDomainToUserResponse(userResult))
 }
 
-func (h *userHandler) FindUserById(c *gin.Context) {
+func (h *userHandler) GetUserById(c *gin.Context) {
 	logger.Info("Starting Find User By Id", stacktraceFindUserByIdHandler)
 
 	userID, err := h.getIdFromParam(c)
@@ -74,13 +128,13 @@ func (h *userHandler) FindUserById(c *gin.Context) {
 
 	userResult, err := h.userService.FindUserById(c.Request.Context(), userID)
 	if err != nil {
-		logger.Error("Error when trying call service", err, stacktraceFindUserByIdHandler)
+		logger.Error(errTryCallService, err, stacktraceFindUserByIdHandler)
 
 		c.JSON(err.HttpStatusCode, err)
 		return
 	}
 
-	logger.Info("User was found Successfully", zap.String("user_id", userResult.ID), stacktraceFindUserByIdHandler)
+	logger.Info("User Found Successfully", zap.String("user_id", userResult.ID), stacktraceFindUserByIdHandler)
 	c.JSON(http.StatusOK, converter.UserDomainToUserResponse(userResult))
 }
 
@@ -95,7 +149,7 @@ func (h *userHandler) UpdateUser(c *gin.Context) {
 
 	var userRequest dtos.UserRequest
 	if err := c.ShouldBindJSON(&userRequest); err != nil {
-		logger.Error("User Request Validation Error", err, stacktraceCreateUserHandler)
+		logger.Error(errUserRequestValidation, err, stacktraceCreateUserHandler)
 
 		restErr := validation.ValidationUserError(err)
 		c.JSON(restErr.HttpStatusCode, restErr)
@@ -111,7 +165,7 @@ func (h *userHandler) UpdateUser(c *gin.Context) {
 
 	userResult, err := h.userService.UpdateUser(c.Request.Context(), userID, user)
 	if err != nil {
-		logger.Error("Error when trying call service", err, stacktraceUpdateUserHandler)
+		logger.Error(errTryCallService, err, stacktraceUpdateUserHandler)
 
 		c.JSON(err.HttpStatusCode, err)
 		return
@@ -132,7 +186,7 @@ func (h *userHandler) DeleteUser(c *gin.Context) {
 
 	err = h.userService.DeleteUser(c.Request.Context(), userID)
 	if err != nil {
-		logger.Error("Error when trying call service", err, stacktraceDeleteUserHandler)
+		logger.Error(errTryCallService, err, stacktraceDeleteUserHandler)
 
 		c.JSON(err.HttpStatusCode, err)
 		return

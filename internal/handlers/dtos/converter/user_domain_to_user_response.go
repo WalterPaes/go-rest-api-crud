@@ -12,3 +12,16 @@ func UserDomainToUserResponse(userDomain *domain.User) dtos.UserResponse {
 		Email: userDomain.Email,
 	}
 }
+
+func UsersDomainListToUserListResponse(usersList []*domain.User, currentPage, totalPerPage int) dtos.UsersListResponse {
+	list := dtos.UsersListResponse{
+		CurrentPage:  currentPage,
+		TotalPerPage: totalPerPage,
+	}
+
+	for _, user := range usersList {
+		list.Users = append(list.Users, UserDomainToUserResponse(user))
+	}
+
+	return list
+}
