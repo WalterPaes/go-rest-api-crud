@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/WalterPaes/go-rest-api-crud/internal/domain"
 	"github.com/WalterPaes/go-rest-api-crud/internal/repositories"
@@ -96,7 +97,10 @@ func (s *userSvc) DeleteUser(ctx context.Context, userID string) *resterrors.Res
 }
 
 func (s *userSvc) checkIfEmailIsAlreadyRegistered(ctx context.Context, email, userID string) *resterrors.RestErr {
-	resultUser, _ := s.userRepository.FindUserByEmail(ctx, email)
+	resultUser, err := s.userRepository.FindUserByEmail(ctx, email)
+	if err != nil && err.HttpStatusCode != http.StatusNotFound {
+		return err
+	}
 
 	if resultUser != nil && resultUser.ID != userID {
 		errMsg := errors.New("email is already registered")
