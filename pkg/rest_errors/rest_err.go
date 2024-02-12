@@ -9,6 +9,7 @@ const (
 	internalServerError = "Internal Server Error"
 	notFound            = "Not Found"
 	forbidden           = "Forbidden"
+	unathorized         = "Unauthorized"
 )
 
 type RestErr struct {
@@ -61,6 +62,14 @@ func NewNotFoundError(message string) *RestErr {
 		Message:        message,
 		HttpErr:        notFound,
 		HttpStatusCode: http.StatusNotFound,
+	}
+}
+
+func NewUnauthorizedError(message string) *RestErr {
+	return &RestErr{
+		Message:        message,
+		HttpErr:        unathorized,
+		HttpStatusCode: http.StatusUnauthorized,
 	}
 }
 

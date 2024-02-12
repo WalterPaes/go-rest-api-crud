@@ -22,6 +22,8 @@ type Configs struct {
 	MongoDBDatabase   string
 	MongoDBCollection string
 	MongoDBTimeout    int
+	JwtSecret         string
+	JwtExpTime        int
 }
 
 func Load(filenames ...string) (*Configs, error) {
@@ -35,6 +37,11 @@ func Load(filenames ...string) (*Configs, error) {
 		return nil, err
 	}
 
+	expTime, err := strconv.Atoi(os.Getenv("JWT_EXP_TIME"))
+	if err != nil {
+		return nil, err
+	}
+
 	return &Configs{
 		ApiPort:           os.Getenv("API_PORT"),
 		LogOutput:         os.Getenv("LOG_OUTPUT"),
@@ -43,5 +50,7 @@ func Load(filenames ...string) (*Configs, error) {
 		MongoDBDatabase:   os.Getenv("MONGODB_DATABASE"),
 		MongoDBCollection: os.Getenv("MONGODB_COLLECTION"),
 		MongoDBTimeout:    mongoDbTimeout,
+		JwtSecret:         os.Getenv("JWT_SECRET"),
+		JwtExpTime:        expTime,
 	}, nil
 }
