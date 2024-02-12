@@ -45,9 +45,9 @@ func main() {
 	r.POST("/login", loginHandler.Login)
 
 	r.POST("/users", userHandler.CreateUser)
-	r.GET("/users/:id", userHandler.FindUserById)
-	r.PUT("/users/:id", userHandler.UpdateUser)
-	r.DELETE("/users/:id", userHandler.DeleteUser)
+	r.GET("/users/:id", jwtAuth.VerifyTokenMiddleware, userHandler.FindUserById)
+	r.PUT("/users/:id", jwtAuth.VerifyTokenMiddleware, userHandler.UpdateUser)
+	r.DELETE("/users/:id", jwtAuth.VerifyTokenMiddleware, userHandler.DeleteUser)
 
 	r.Run(cfg.ApiPort)
 }
