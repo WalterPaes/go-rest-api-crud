@@ -2,6 +2,8 @@ package configs
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -10,6 +12,7 @@ import (
 
 var (
 	errLoadingFile = "Error loading .env file"
+	errToParseEnv  = "Error to parse env '%s': %s"
 )
 
 const appDevEnv = "development"
@@ -29,15 +32,18 @@ type Configs struct {
 func Load(filenames ...string) (*Configs, error) {
 	err := godotenv.Load(filenames...)
 	if err != nil && os.Getenv("APP_ENV") == appDevEnv {
+		log.Println("FATAAAAAAAAAAAL")
 		return nil, errors.New(errLoadingFile)
 	}
 
-	mongoDbTimeout, err := strconv.Atoi(os.Getenv("MONGODB_TIMEOUT_IN_SECONDS"))
+	fmt.Println(os.Getenv("API_PORT"), os.Getenv("MONGODB_TIMEOUT_IN_SECONDS"))
+
+	mongoDbTimeout, err := parseEnvToInt("MONGODB_TIMEOUT_IN_SECONDS")
 	if err != nil {
 		return nil, err
 	}
 
-	expTime, err := strconv.Atoi(os.Getenv("JWT_EXP_TIME"))
+	expTime, err := parseEnvToInt("JWT_EXP_TIME")
 	if err != nil {
 		return nil, err
 	}
@@ -53,4 +59,13 @@ func Load(filenames ...string) (*Configs, error) {
 		JwtSecret:         os.Getenv("JWT_SECRET"),
 		JwtExpTime:        expTime,
 	}, nil
+}
+
+func parseEnvToInt(key string) (int, error) {
+	var value int
+	value, err := strconv.Atoi(os.Getenv(key))
+	if err != nil {
+		return value, fmt.Errorf(errToParseEnv, key, err.Error())
+	}
+	return value, nil
 }

@@ -1,0 +1,27 @@
+version: '3'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/go/src
+    depends_on:
+      - mongodb
+    networks:
+      - api_rest_network
+
+  mongodb:
+    image: mongo
+    volumes:
+      - .docker-volumes/mongo:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - api_rest_network
+
+networks:
+  api_rest_network:
+    name: api_rest_network
