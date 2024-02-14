@@ -26,6 +26,18 @@ func NewLoginHandler(loginService services.LoginService) *loginHandler {
 	}
 }
 
+// User Login godoc
+// @Summary Login an user
+// @Description Login an user
+// @Tags login
+// @Accept json
+// @Produce json
+// @Param request body dtos.LoginRequest true "Login Request"
+// @Success 200 {object} dtos.LoginResponse
+// @Failure 400 {object} resterrors.RestErr
+// @Failure 401
+// @Failure 404 {object} resterrors.RestErr
+// @Router /login [post]
 func (h *loginHandler) Login(c *gin.Context) {
 	logger.Info("Starting Login User Handler", stacktraceLoginUserHandler)
 

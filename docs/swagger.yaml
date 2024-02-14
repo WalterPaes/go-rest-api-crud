@@ -1,0 +1,265 @@
+basePath: /
+definitions:
+  dtos.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dtos.LoginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  dtos.UserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 4
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  dtos.UserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  dtos.UsersListResponse:
+    properties:
+      current_page:
+        type: integer
+      total_per_page:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/dtos.UserResponse'
+        type: array
+    type: object
+  resterrors.RestErr:
+    properties:
+      errors:
+        items: {}
+        type: array
+      http_error:
+        type: string
+      message:
+        type: string
+      status_code:
+        type: integer
+    type: object
+host: localhost:8000
+info:
+  contact: {}
+  description: User API with authentication
+  title: Go User's API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Login an user
+      parameters:
+      - description: Login Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+      summary: Login an user
+      tags:
+      - login
+  /users:
+    get:
+      description: list all users
+      parameters:
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: items per page number
+        in: query
+        name: per_page
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.UsersListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+      security:
+      - ApiKeyAuth: []
+      summary: list all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: create an user
+      parameters:
+      - description: user request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dtos.UsersListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+      security:
+      - ApiKeyAuth: []
+      summary: create an user
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      description: delete an user
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+      security:
+      - ApiKeyAuth: []
+      summary: delete an user
+      tags:
+      - users
+    get:
+      description: get an user
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.UsersListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+      security:
+      - ApiKeyAuth: []
+      summary: get an user
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: update an user
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: user request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.UsersListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resterrors.RestErr'
+      security:
+      - ApiKeyAuth: []
+      summary: update an user
+      tags:
+      - users
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

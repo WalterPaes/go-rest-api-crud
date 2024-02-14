@@ -13,8 +13,20 @@ import (
 	"github.com/WalterPaes/go-rest-api-crud/pkg/logger"
 	"github.com/WalterPaes/go-rest-api-crud/pkg/mongodb"
 	"github.com/gin-gonic/gin"
+
+	docs "github.com/WalterPaes/go-rest-api-crud/docs"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title Go User's API
+// @version 1.0
+// @description User API with authentication
+// @host localhost:8000
+// @BasePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	cfg, err := configs.Load()
 	if err != nil {
@@ -44,11 +56,14 @@ func main() {
 
 	r.POST("/login", loginHandler.Login)
 
-	r.GET("/users", userHandler.ListAll)
-	r.POST("/users", userHandler.CreateUser)
+	r.GET("/users", jwtAuth.VerifyTokenMiddleware, userHandler.ListAll)
+	r.POST("/users", jwtAuth.VerifyTokenMiddleware, userHandler.CreateUser)
 	r.GET("/users/:id", jwtAuth.VerifyTokenMiddleware, userHandler.GetUserById)
 	r.PUT("/users/:id", jwtAuth.VerifyTokenMiddleware, userHandler.UpdateUser)
 	r.DELETE("/users/:id", jwtAuth.VerifyTokenMiddleware, userHandler.DeleteUser)
+
+	docs.SwaggerInfo.BasePath = "/"
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	r.Run(cfg.ApiPort)
 }

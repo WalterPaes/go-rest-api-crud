@@ -38,6 +38,18 @@ func NewUserHandler(userService services.UserService) *userHandler {
 	}
 }
 
+// List Users godoc
+// @Summary list all users
+// @Description list all users
+// @Tags users
+// @Produce json
+// @Param page query string false "page number"
+// @Param per_page query string false "items per page number"
+// @Success 200 {object} dtos.UsersListResponse
+// @Failure 400 {object} resterrors.RestErr
+// @Failure 500 {object} resterrors.RestErr
+// @Router /users [get]
+// @Security ApiKeyAuth
 func (h *userHandler) ListAll(c *gin.Context) {
 	logger.Info("Starting Find User By Id", stacktraceFindAllUsersHandler)
 
@@ -85,6 +97,18 @@ func (h *userHandler) ListAll(c *gin.Context) {
 	c.JSON(http.StatusOK, converter.UsersDomainListToUserListResponse(userResult, currentPage, itemsPerPage))
 }
 
+// Create User godoc
+// @Summary create an user
+// @Description create an user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body dtos.UserRequest true "user request"
+// @Success 201 {object} dtos.UsersListResponse
+// @Failure 400 {object} resterrors.RestErr
+// @Failure 500 {object} resterrors.RestErr
+// @Router /users [post]
+// @Security ApiKeyAuth
 func (h *userHandler) CreateUser(c *gin.Context) {
 	logger.Info("Starting Create User", stacktraceCreateUserHandler)
 
@@ -117,6 +141,18 @@ func (h *userHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, converter.UserDomainToUserResponse(userResult))
 }
 
+// Get User godoc
+// @Summary get an user
+// @Description get an user
+// @Tags users
+// @Produce json
+// @Param id path string true "user id"
+// @Success 200 {object} dtos.UsersListResponse
+// @Failure 400 {object} resterrors.RestErr
+// @Failure 404 {object} resterrors.RestErr
+// @Failure 500 {object} resterrors.RestErr
+// @Router /users/{id} [get]
+// @Security ApiKeyAuth
 func (h *userHandler) GetUserById(c *gin.Context) {
 	logger.Info("Starting Find User By Id", stacktraceFindUserByIdHandler)
 
@@ -138,6 +174,18 @@ func (h *userHandler) GetUserById(c *gin.Context) {
 	c.JSON(http.StatusOK, converter.UserDomainToUserResponse(userResult))
 }
 
+// Update User godoc
+// @Summary update an user
+// @Description update an user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "user id"
+// @Param request body dtos.UserRequest true "user request"
+// @Success 200 {object} dtos.UsersListResponse
+// @Failure 400 {object} resterrors.RestErr
+// @Router /users/{id} [put]
+// @Security ApiKeyAuth
 func (h *userHandler) UpdateUser(c *gin.Context) {
 	logger.Info("Starting Update User", stacktraceUpdateUserHandler)
 
@@ -175,6 +223,17 @@ func (h *userHandler) UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, converter.UserDomainToUserResponse(userResult))
 }
 
+// Delete User godoc
+// @Summary delete an user
+// @Description delete an user
+// @Tags users
+// @Produce json
+// @Param id path string true "user id"
+// @Success 204
+// @Failure 400 {object} resterrors.RestErr
+// @Failure 500 {object} resterrors.RestErr
+// @Router /users/{id} [delete]
+// @Security ApiKeyAuth
 func (h *userHandler) DeleteUser(c *gin.Context) {
 	logger.Info("Starting Delete User", stacktraceDeleteUserHandler)
 
