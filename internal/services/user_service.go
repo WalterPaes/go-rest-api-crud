@@ -12,7 +12,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const errCallRepositoy = "Error when try call repository"
+const (
+	errCallRepositoy          = "Error when try call repository"
+	errEmailAlreadyRegistered = "Email is already registered"
+)
 
 var (
 	stacktraceFindAllUsersService = zap.String("stacktrace", "find-all-users-service")
@@ -125,7 +128,7 @@ func (s *userSvc) checkIfEmailIsAlreadyRegistered(ctx context.Context, email, us
 	}
 
 	if resultUser != nil && resultUser.ID != userID {
-		errMsg := errors.New("email is already registered")
+		errMsg := errors.New(errEmailAlreadyRegistered)
 		logger.Error(errMsg.Error(), errMsg)
 		return resterrors.NewBadRequestError(errMsg.Error())
 	}
