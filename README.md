@@ -4,7 +4,7 @@
 
 ## Prerequisites 
 
-- [Docker](https://www.docker.com/): Docker is required.
+- [Docker](https://www.docker.com/) is required.
 
 ## How do Execute?
 1. Rename .env.example to .env and set the var's values
