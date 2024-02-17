@@ -28,6 +28,11 @@ var (
 	stacktraceDeleteUserHandler   = zap.String("stacktrace", "delete-user-handler")
 )
 
+var (
+	currentPage  int = 1
+	itemsPerPage int = 10
+)
+
 type userHandler struct {
 	userService services.UserService
 }
@@ -51,12 +56,7 @@ func NewUserHandler(userService services.UserService) *userHandler {
 // @Router /users [get]
 // @Security ApiKeyAuth
 func (h *userHandler) ListAll(c *gin.Context) {
-	logger.Info("Starting Find User By Id", stacktraceFindAllUsersHandler)
-
-	var (
-		currentPage  int = 1
-		itemsPerPage int = 10
-	)
+	logger.Info("Starting List Users", stacktraceFindAllUsersHandler)
 
 	page, exists := c.GetQuery("page")
 	if exists {
