@@ -66,7 +66,10 @@ func (h *userHandler) ListAll(c *gin.Context) {
 			c.JSON(restErr.HttpStatusCode, restErr)
 			return
 		}
-		currentPage = value
+
+		if value > 0 {
+			currentPage = value
+		}
 	}
 
 	perPage, exists := c.GetQuery("per_page")
@@ -77,7 +80,10 @@ func (h *userHandler) ListAll(c *gin.Context) {
 			c.JSON(restErr.HttpStatusCode, restErr)
 			return
 		}
-		itemsPerPage = value
+
+		if value > 0 {
+			itemsPerPage = value
+		}
 	}
 
 	userResult, err := h.userService.FindAll(c.Request.Context(), itemsPerPage, currentPage)
