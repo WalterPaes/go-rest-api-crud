@@ -40,7 +40,7 @@ func (s *loginSvc) LoginUser(ctx context.Context, user *domain.User) (string, *r
 
 	resultUser, err := s.userRepository.FindUserByEmail(ctx, user.Email)
 	if err != nil {
-		if err.HttpStatusCode != http.StatusNotFound {
+		if err.HttpStatusCode == http.StatusNotFound {
 			logger.Error(errInvalidCredentials, err, stacktraceLoginService)
 			return "", resterrors.NewUnauthorizedError(errInvalidCredentials)
 		}
@@ -55,9 +55,9 @@ func (s *loginSvc) LoginUser(ctx context.Context, user *domain.User) (string, *r
 	}
 
 	token, err := s.jwtAuth.GenerateToken(map[string]any{
-		"id":    user.ID,
-		"email": user.Email,
-		"name":  user.Name,
+		"id":    resultUser.ID,
+		"email": resultUser.Email,
+		"name":  resultUser.Name,
 	})
 	if err != nil {
 		logger.Error(err.Error(), err, stacktraceLoginService)
